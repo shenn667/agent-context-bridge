@@ -6,6 +6,16 @@ import sys
 from pathlib import Path
 
 from agent_context_bridge.core import MemoryStore, ContextRecord, MAX_LIST_LIMIT
+from agent_context_bridge import get_version
+from agent_context_bridge.hooks import (
+    HOOK_TARGETS,
+    DEFAULT_MAX_ENTRIES,
+    hook_command,
+    render_claude_settings_snippet,
+    hermes_wiring_snippet,
+    install_claude_hook,
+    run_hook_injection,
+)
 from agent_context_bridge.adapters import (
     HermesAdapter,
     ClaudeCodeAdapter,
@@ -33,6 +43,12 @@ def main():
         prog="agent-bridge",
         description="Agent Context Bridge (ACB) — Universal memory & context handoff for coding agents.",
         parents=[parent_parser],
+    )
+    parser.add_argument(
+        "--version",
+        action="version",
+        version=f"%(prog)s {get_version()}",
+        help="Show package version (coherent with git tag vX.Y.Z and pyproject).",
     )
     subparsers = parser.add_subparsers(dest="command", help="Available subcommands")
 
@@ -63,6 +79,31 @@ def main():
 
     # export
     export_parser = subparsers.add_parser("export", help="Export full snapshot to JSON", parents=[parent_parser])
+
+    # hooks
+    hooks_parser = subparsers.add_parser(
+        "hooks", help="Native agent hooks (Claude SessionStart, Hermes inject)", parents=[parent_parser]
+    )
+    hooks_sub = hooks_parser.add_subparsers(dest="hooks_action", help="Hook operations")
+
+    hooks_claude = hooks_sub.add_parser("claude", help="Claude Code SessionStart hook", parents=[parent_parser])
+    hooks_claude.add_argument("--print", dest="print_snippet", action="store_true",
+                              help="Print .claude/settings.json snippet (default)")
+    hooks_claude.add_argument("--install", action="store_true",
+                              help="Write/merge hook into <workspace>/.claude/settings.json")
+    hooks_claude.add_argument("-n", "--max-entries", type=int, default=DEFAULT_MAX_ENTRIES,
+                              help="Maximum context entries injected per session")
+
+    hooks_hermes = hooks_sub.add_parser("hermes", help="Hermes Agent inject wiring", parents=[parent_parser])
+    hooks_hermes.add_argument("--print", dest="print_snippet", action="store_true", default=True,
+                              help="Print one-command Hermes wiring snippet")
+
+    hooks_run = hooks_sub.add_parser("run", help="Execute hook injection (reads hook JSON on stdin, prints context on stdout)",
+                                     parents=[parent_parser])
+    hooks_run.add_argument("--target", choices=list(HOOK_TARGETS), default="hermes",
+                           help="Target agent prompt format")
+    hooks_run.add_argument("-n", "--max-entries", type=int, default=DEFAULT_MAX_ENTRIES,
+                           help="Maximum entries to inject")
 
     args = parser.parse_args()
 
@@ -142,6 +183,46 @@ def main():
             print(f"error: failed to export snapshot: {exc}", file=sys.stderr)
             sys.exit(1)
         print(json.dumps(snap.to_dict(), indent=2, ensure_ascii=False))
+
+    elif args.command == "hooks":
+        action = args.hooks_action
+        if action == "claude":
+            max_entries = args.max_entries if args.max_entries and args.max_entries > 0 else DEFAULT_MAX_ENTRIES
+            if args.install:
+                try:
+                    settings_path = install_claude_hook(workspace, max_entries=max_entries)
+                except OSError as exc:
+                    print(f"error: failed to install Claude hook: {exc}", file=sys.stderr)
+                    sys.exit(1)
+                print(f"✓ Claude SessionStart hook installed: {settings_path}")
+                print(f"  command: {hook_command('claude', max_entries)}")
+            else:
+                print(render_claude_settings_snippet(max_entries=max_entries))
+        elif action == "hermes":
+            print(hermes_wiring_snippet())
+        elif action == "run":
+            # Drain hook payload on stdin (Claude SessionStart JSON); ignore content.
+            try:
+                if not sys.stdin.isatty():
+                    sys.stdin.read()
+            except (OSError, ValueError):
+                pass
+            limit = args.max_entries
+            if limit is not None and limit <= 0:
+                parser.error("--max-entries must be a positive integer.")
+            try:
+                output = run_hook_injection(workspace, target=args.target, max_entries=limit)
+            except ValueError as exc:
+                print(f"error: {exc}", file=sys.stderr)
+                sys.exit(2)
+            if not output.strip():
+                print("No shared context records found. Run `agent-bridge record` first.",
+                      file=sys.stderr)
+                sys.exit(0)
+            print(output)
+        else:
+            hooks_parser.print_help()
+            sys.exit(0)
 
 
 if __name__ == "__main__":
