@@ -3,7 +3,7 @@
 [![PyPI version](https://img.shields.io/pypi/v/agent-context-bridge.svg)](https://pypi.org/project/agent-context-bridge/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python: 3.10+](https://img.shields.io/badge/python-3.10%2B-brightgreen.svg)](https://www.python.org/)
-[![CI: Passing](https://img.shields.io/badge/CI-passing-success.svg)](https://github.com/shenn667/agent-context-bridge/actions)
+[![CI](https://github.com/shenn667/agent-context-bridge/actions/workflows/ci.yml/badge.svg)](https://github.com/shenn667/agent-context-bridge/actions/workflows/ci.yml)
 
 > **Universal, zero-dependency context & memory bridge for autonomous coding agents.**  
 > Seamlessly share project decisions, architectural constraints, and task progress between **Hermes Agent**, **Claude Code**, **OpenCode**, and **Codex**.
@@ -86,6 +86,42 @@ acb inject --target hermes
 
 # For OpenCode:
 acb inject --target opencode
+```
+
+---
+
+## ✅ Demo locale (3 commandes)
+
+Reproductible depuis une clone fraîche — prouve install + record/inject + version cohérente :
+
+```bash
+pip install -e .
+acb init --dir /tmp/acb-demo && acb record --dir /tmp/acb-demo --agent hermes-dev --topic "Demo" --summary "Bridge OK" && acb inject --dir /tmp/acb-demo --target hermes
+acb --version
+```
+
+Attendu : `agent-bridge 0.2.0` (identique à `pyproject.toml`, `__init__.__version__` et au tag `v0.2.0` — le workflow `release.yml` refuse la publication si tag ≠ version).
+
+---
+
+## 🪝 Hooks natifs (1 commande chacun)
+
+### Claude Code — SessionStart
+
+```bash
+acb hooks claude --print     # affiche le snippet .claude/settings.json
+acb hooks claude --install   # écrit/fusionne <workspace>/.claude/settings.json (idempotent)
+echo '{}' | acb hooks run --target claude   # teste le hook : exit 0 + contexte sur stdout
+```
+
+Le hook enregistré est `acb inject --target claude` : Claude Code l'exécute à chaque
+SessionStart (payload JSON sur stdin, ignoré) et le stdout est injecté en contexte de session.
+
+### Hermes Agent — inject
+
+```bash
+acb hooks hermes --print     # snippet de câblage (préambule de session)
+acb inject --target hermes   # inject 1-commande, prêt pour le system context
 ```
 
 ---

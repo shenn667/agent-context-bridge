@@ -4,6 +4,13 @@ All notable changes to `agent-context-bridge` are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
+### Added
+- `acb --version` (single source of truth: installed dist metadata, fallback `__version__`).
+- Native hooks: `acb hooks claude --print|--install`, `acb hooks hermes --print`,
+  `acb hooks run --target <hermes|claude|opencode|codex>` (stdin-draining, exit 0, 1-command test).
+- README: 3-command local demo + 1-command hook wiring docs.
+### Fixed
+- CI badge now reflects the real workflow status (dynamic `ci.yml` badge) instead of a static "passing" shield.
 
 ## [0.2.0] - 2026-11-15
 ### Added
