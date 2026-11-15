@@ -52,7 +52,7 @@ def test_snapshot_generation(tmp_path: Path):
     snap = store.snapshot()
 
     assert isinstance(snap, BridgeSnapshot)
-    assert snap.version == "0.1.0"
+    assert snap.version == "0.2.0"
     assert len(snap.records) == 1
     assert snap.total_tokens > 0
 

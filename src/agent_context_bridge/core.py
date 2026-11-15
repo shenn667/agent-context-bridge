@@ -183,7 +183,7 @@ class MemoryStore:
         """Create an exportable snapshot object."""
         records = self.list_records()
         return BridgeSnapshot(
-            version="0.1.0",
+            version="0.2.0",
             project_root=str(self.workspace),
             records=records,
         )

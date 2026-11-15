@@ -1,6 +1,6 @@
 # 🌉 Agent Context Bridge (ACB)
 
-[![PyPI version](https://img.shields.io/badge/pypi-v0.1.0-blue.svg)](https://pypi.org/project/agent-context-bridge/)
+[![PyPI version](https://img.shields.io/pypi/v/agent-context-bridge.svg)](https://pypi.org/project/agent-context-bridge/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python: 3.10+](https://img.shields.io/badge/python-3.10%2B-brightgreen.svg)](https://www.python.org/)
 [![CI: Passing](https://img.shields.io/badge/CI-passing-success.svg)](https://github.com/shenn667/agent-context-bridge/actions)
