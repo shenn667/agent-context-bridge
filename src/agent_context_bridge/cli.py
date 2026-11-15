@@ -5,7 +5,7 @@ import json
 import sys
 from pathlib import Path
 
-from agent_context_bridge.core import MemoryStore, ContextRecord
+from agent_context_bridge.core import MemoryStore, ContextRecord, MAX_LIST_LIMIT
 from agent_context_bridge.adapters import (
     HermesAdapter,
     ClaudeCodeAdapter,
@@ -14,9 +14,20 @@ from agent_context_bridge.adapters import (
 )
 
 
+def _require_valid_limit(parser: argparse.ArgumentParser, limit) -> int:
+    """Validate --limit/-n: reject <= 0 with exit code 2, cap at MAX_LIST_LIMIT."""
+    if limit is None:
+        return 10
+    if limit <= 0:
+        parser.error(f"--limit/-n must be a positive integer (got {limit}).")
+    return min(limit, MAX_LIST_LIMIT)
+
+
 def main():
     parent_parser = argparse.ArgumentParser(add_help=False)
-    parent_parser.add_argument("--dir", default=".", help="Workspace root directory")
+    # NOTE: default=SUPPRESS so the subparser-level --dir does not shadow a
+    # top-level `--dir <path>` with its own default (classic argparse pitfall).
+    parent_parser.add_argument("--dir", default=argparse.SUPPRESS, help="Workspace root directory")
 
     parser = argparse.ArgumentParser(
         prog="agent-bridge",
@@ -63,23 +74,40 @@ def main():
     store = MemoryStore(workspace)
 
     if args.command == "init":
-        p = store.initialize()
+        try:
+            p = store.initialize()
+        except OSError as exc:
+            print(f"error: failed to initialize store at {store.bridge_dir}: {exc}", file=sys.stderr)
+            sys.exit(1)
         print(f"✓ Initialized Agent Context Bridge at: {p}")
         print(f"✓ Context document created: {store.summary_md}")
 
     elif args.command == "record":
-        record = ContextRecord(
-            agent=args.agent,
-            topic=args.topic,
-            summary=args.summary,
-            details=args.details,
-            tags=args.tag,
-        )
-        store.add_record(record)
+        try:
+            record = ContextRecord(
+                agent=args.agent,
+                topic=args.topic,
+                summary=args.summary,
+                details=args.details,
+                tags=args.tag,
+            )
+        except ValueError as exc:
+            print(f"error: invalid record: {exc}", file=sys.stderr)
+            sys.exit(2)
+        try:
+            store.add_record(record)
+        except (OSError, ValueError) as exc:
+            print(f"error: failed to record context: {exc}", file=sys.stderr)
+            sys.exit(1)
         print(f"✓ Recorded [{record.agent}] {record.topic} ({record.estimated_tokens} tokens)")
 
     elif args.command == "list":
-        records = store.list_records(limit=args.limit)
+        limit = _require_valid_limit(parser, args.limit)
+        try:
+            records = store.list_records(limit=limit)
+        except OSError as exc:
+            print(f"error: failed to list records: {exc}", file=sys.stderr)
+            sys.exit(1)
         if not records:
             print("No shared context records found. Run `agent-bridge record` first.")
             return
@@ -89,6 +117,7 @@ def main():
         print(f"\nFull log: {store.summary_md}")
 
     elif args.command == "inject":
+        limit = _require_valid_limit(parser, args.limit)
         adapters = {
             "hermes": HermesAdapter(),
             "claude": ClaudeCodeAdapter(),
@@ -96,10 +125,22 @@ def main():
             "codex": CodexAdapter(),
         }
         adapter = adapters[args.target]
-        print(adapter.format_prompt_injection(store, max_entries=args.limit))
+        try:
+            output = adapter.format_prompt_injection(store, max_entries=limit)
+        except OSError as exc:
+            print(f"error: failed to inject context: {exc}", file=sys.stderr)
+            sys.exit(1)
+        if not output.strip():
+            print("No shared context records found. Run `agent-bridge record` first.")
+            return
+        print(output)
 
     elif args.command == "export":
-        snap = store.snapshot()
+        try:
+            snap = store.snapshot()
+        except OSError as exc:
+            print(f"error: failed to export snapshot: {exc}", file=sys.stderr)
+            sys.exit(1)
         print(json.dumps(snap.to_dict(), indent=2, ensure_ascii=False))
 
 
