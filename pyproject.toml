@@ -1,0 +1,54 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "agent-context-bridge"
+version = "0.1.0"
+description = "A lightweight, zero-dependency universal context & memory bridge for autonomous coding agents (Hermes, Claude Code, OpenCode, Codex)."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [
+    { name = "shenn667", email = "lehdev@yandex.com" }
+]
+keywords = [
+    "agents",
+    "ai",
+    "memory",
+    "context",
+    "hermes",
+    "claude-code",
+    "opencode",
+    "multi-agent",
+    "developer-tools"
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Topic :: Software Development :: Build Tools",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Operating System :: OS Independent",
+]
+dependencies = []
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+]
+
+[project.scripts]
+agent-bridge = "agent_context_bridge.cli:main"
+acb = "agent_context_bridge.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/shenn667/agent-context-bridge"
+Repository = "https://github.com/shenn667/agent-context-bridge"
+Issues = "https://github.com/shenn667/agent-context-bridge/issues"
+Changelog = "https://github.com/shenn667/agent-context-bridge/blob/main/CHANGELOG.md"
