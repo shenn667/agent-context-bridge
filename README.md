@@ -8,6 +8,12 @@
 > **Universal, zero-dependency context & memory bridge for autonomous coding agents.**  
 > Seamlessly share project decisions, architectural constraints, and task progress between **Hermes Agent**, **Claude Code**, **OpenCode**, and **Codex**.
 
+> ⏱️ **The 10-second version:** every AI coding tool starts blind — decisions made in one agent are lost to the next. ACB records them once (`acb record`) and replays them in each agent's native format (`acb inject`).
+
+![ACB demo: init → record → inject](docs/demo.gif)
+
+*50s, no audio: `init` → `record` → `list` → `inject` for Claude & Hermes. One store (`.agent_bridge/`) → every agent.*
+
 ---
 
 ## 💡 The Problem: Multi-Agent Context Fragmentation
