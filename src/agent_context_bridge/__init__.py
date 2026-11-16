@@ -4,7 +4,7 @@ Universal, zero-dependency context & memory bridge for multi-agent workflows.
 Enables transparent context handoff between Hermes Agent, Claude Code, OpenCode, and Codex.
 """
 
-__version__ = "0.2.0"
+__version__ = "0.3.0"
 __author__ = "shenn667"
 
 

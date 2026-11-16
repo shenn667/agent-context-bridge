@@ -119,6 +119,13 @@ def install_claude_hook(
         )
 
     atomic_write(settings_path, json.dumps(existing, indent=2) + "\n")
+    # M1: explicit restrictive perms on the hook settings file (best-effort).
+    try:
+        import os as _os
+
+        _os.chmod(settings_path, 0o600)
+    except OSError:
+        pass
     return settings_path
 
 

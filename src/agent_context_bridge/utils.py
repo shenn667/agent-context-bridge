@@ -31,3 +31,9 @@ def atomic_write(target_path: Union[str, Path], content: str, encoding: str = "u
         temp_name = tf.name
 
     os.replace(temp_name, path)
+    # M1: explicit restrictive perms (0o600) — NamedTemporaryFile mode is an
+    # accident of umask, not a policy. Best-effort, never raises.
+    try:
+        os.chmod(path, 0o600)
+    except OSError:
+        pass

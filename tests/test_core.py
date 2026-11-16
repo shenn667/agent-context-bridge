@@ -47,12 +47,13 @@ def test_memory_store_roundtrip(tmp_path: Path):
 
 
 def test_snapshot_generation(tmp_path: Path):
+    from agent_context_bridge import get_version
     store = MemoryStore(tmp_path)
     store.add_record(ContextRecord(agent="qa", topic="Testing", summary="All tests passed."))
     snap = store.snapshot()
 
     assert isinstance(snap, BridgeSnapshot)
-    assert snap.version == "0.2.0"
+    assert snap.version == get_version()
     assert len(snap.records) == 1
     assert snap.total_tokens > 0
 

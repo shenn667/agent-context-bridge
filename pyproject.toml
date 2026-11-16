@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "agent-context-bridge"
-version = "0.2.0"
+version = "0.3.0"
 description = "A lightweight, zero-dependency universal context & memory bridge for autonomous coding agents (Hermes, Claude Code, OpenCode, Codex)."
 readme = "README.md"
 requires-python = ">=3.10"
@@ -46,6 +46,7 @@ dev = [
 [project.scripts]
 agent-bridge = "agent_context_bridge.cli:main"
 acb = "agent_context_bridge.cli:main"
+acb-mcp = "agent_context_bridge.mcp:main"
 
 [project.urls]
 Homepage = "https://github.com/shenn667/agent-context-bridge"
