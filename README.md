@@ -5,10 +5,10 @@
 [![Python: 3.10+](https://img.shields.io/badge/python-3.10%2B-brightgreen.svg)](https://www.python.org/)
 [![CI](https://github.com/shenn667/agent-context-bridge/actions/workflows/ci.yml/badge.svg)](https://github.com/shenn667/agent-context-bridge/actions/workflows/ci.yml)
 
-> **Universal, zero-dependency context & memory bridge for autonomous coding agents.**  
-> Seamlessly share project decisions, architectural constraints, and task progress between **Hermes Agent**, **Claude Code**, **OpenCode**, and **Codex**.
+> **Universal, zero-dependency context & memory bridge for autonomous coding agents.**
+> Share project decisions, architectural constraints, and task progress between **Hermes Agent**, **Claude Code**, **OpenCode**, and **Codex**.
 
-> ⏱️ **The 10-second version:** every AI coding tool starts blind — decisions made in one agent are lost to the next. ACB records them once (`acb record`) and replays them in each agent's native format (`acb inject`).
+> ⏱️ **The 10-second version:** every AI coding tool starts blind — decisions made in one agent are lost to the next. ACB records them once (`acb record`) and replays them in each agent's native format (`acb inject`, hook, or MCP tool).
 
 ![ACB demo: init → record → inject](docs/demo.gif)
 
@@ -16,24 +16,80 @@
 
 ---
 
+## 🔌 Claude-native: MCP server `acb-mcp` (readonly)
+
+Claude Code / Claude Desktop can query shared context directly via stdio MCP — no hook needed. The server exposes 3 strictly **readonly** tools: `acb_search`, `acb_status`, `acb_prune` (dry-run by default, never mutates unless asked).
+
+Copy-paste into `claude.json` (Claude Code) or Claude Desktop MCP config:
+
+```json
+{
+  "mcpServers": {
+    "acb": {
+      "command": "acb-mcp",
+      "args": ["--dir", "/path/to/your/project"],
+      "transport": "stdio"
+    }
+  }
+}
+```
+
+Then ask Claude: *"search ACB for the auth decision"* → `acb_search` returns the matching records. Verify with `acb_status`.
+
+Prefer hooks? One command each — `acb hooks claude --install` writes `.claude/settings.json` (SessionStart → `acb inject --target claude`), `--print` previews it.
+
+---
+
+## ✨ What's new in v0.3.0
+
+| Command | What it does |
+|---|---|
+| `acb search "query"` | Full-text search over shared context, newest-first (`--limit`, `--json`) |
+| `acb status [--json]` | Store health: record count, size, agent targets covered |
+| `acb audit` | Integrity check of `records.jsonl` (corrupt lines, missing fields) |
+| `acb prune --keep-last N [--dry-run]` | Keep the N most recent records, drop the rest |
+
+```bash
+acb search "SQLite auth"      # 2 hits, most recent first
+acb status                    # 3 records, 1642 bytes, hermes/claude/opencode/codex
+acb prune --keep-last 20 --dry-run   # preview before trimming
+```
+
+---
+
+## 📊 Measured token savings: −98.7%
+
+> Real benchmark from `QA_REPORT_v0.3.0.md` (v0.3.0, 30-record store, tokens ≈ chars/4, measured not estimated):
+>
+> | Scenario | ~Tokens |
+> |---|---|
+> | Naive: re-read sources at agent switch (7 .py, 60 768 chars) | **15 192** |
+> | ACB `inject` (bounded to 5 latest, constant cost) | **198** |
+>
+> **(15 192 − 198) / 15 192 = 98.7% saved.** Also −95.7% vs re-reading decision docs (4 555 → 198) and −90.5% vs full context file (2 078 → 198).
+>
+> Key property: `inject` cost stays **flat** as the store grows; naive re-reading grows linearly. `search` returns only relevant hits.
+
+---
+
 ## 💡 The Problem: Multi-Agent Context Fragmentation
 
-When switching between modern AI developer tools (e.g., Claude Code in terminal, Hermes swarm running in background, OpenCode in IDE):
-1. **Each agent starts blind**: Context learned by one agent in a prior turn is lost to the next.
-2. **Token waste**: Agents re-read entire repository trees to rediscover decisions already made.
-3. **No persistent audit trail**: Critical architectural choices disappear with session resets.
+When switching between modern AI developer tools (e.g., Claude Code in terminal, Hermes swarm in background, OpenCode in IDE):
+1. **Each agent starts blind**: context learned by one agent is lost to the next.
+2. **Token waste**: agents re-read entire repos to rediscover decisions already made (see benchmark above).
+3. **No persistent audit trail**: critical architectural choices disappear with session resets.
 
-**Agent Context Bridge** solves this with a lightweight, file-backed offline store (`.agent_bridge/`) and dedicated adapter templates for each agent's native prompt hook format.
+**ACB** solves this with a lightweight, file-backed offline store (`.agent_bridge/`) and native adapters per agent.
 
 ---
 
 ## ✨ Features
 
-- **Zero Runtime Dependencies**: Pure Python standard library (`argparse`, `json`, `dataclasses`, `datetime`). Fast and crash-resilient.
-- **Offline & Local-First**: No background daemon, no external database, no network calls. Works 100% offline.
-- **Multi-Agent Adapters**: Native formatters for **Hermes Agent**, **Claude Code**, **OpenCode**, and **Codex**.
-- **Human-Readable & Machine-Parseable**: Automatically maintains both `records.jsonl` (structured) and `SHARED_CONTEXT.md` (markdown view).
-- **Fast CLI**: Simple `agent-bridge` (`acb`) command for CI, shell hooks, or direct agent execution.
+- **Zero Runtime Dependencies**: pure stdlib (`argparse`, `json`, `dataclasses`, `datetime`).
+- **Offline & Local-First**: no daemon, no database, no network. Works 100% offline.
+- **Multi-Agent Adapters**: native formatters for **Hermes**, **Claude Code**, **OpenCode**, **Codex**.
+- **MCP-native**: `acb-mcp` stdio server, readonly tools for Claude.
+- **Human-Readable & Machine-Parseable**: `records.jsonl` + `SHARED_CONTEXT.md` maintained automatically.
 
 ---
 
@@ -43,7 +99,7 @@ When switching between modern AI developer tools (e.g., Claude Code in terminal,
 pip install agent-context-bridge
 ```
 
-Or install locally from source:
+Or from source:
 
 ```bash
 git clone https://github.com/shenn667/agent-context-bridge.git
@@ -55,50 +111,29 @@ pip install -e .
 
 ## 🚀 Quickstart
 
-### 1. Initialize a Workspace
-
 ```bash
 acb init
-```
-Creates `.agent_bridge/records.jsonl` and `.agent_bridge/SHARED_CONTEXT.md`.
 
-### 2. Record a Context Decision
-
-```bash
 acb record \
   --agent hermes-dev \
   --topic "Database Engine" \
   --summary "Adopted SQLite WAL mode for local agent state storage" \
-  --details "PostgreSQL required Docker containers; SQLite provides zero-latency offline access." \
+  --details "PostgreSQL required Docker; SQLite gives zero-latency offline access." \
   --tag db --tag architecture
-```
 
-### 3. List Shared Context
-
-```bash
 acb list
-```
+acb search "SQLite"
 
-### 4. Inject Context into an Agent Session
-
-Output prompt-ready context tailored for your target agent:
-
-```bash
-# For Claude Code SessionStart hook:
-acb inject --target claude
-
-# For Hermes Agent system context:
-acb inject --target hermes
-
-# For OpenCode:
-acb inject --target opencode
+acb inject --target claude    # Claude Code SessionStart hook
+acb inject --target hermes   # Hermes system context
+acb inject --target opencode # OpenCode
 ```
 
 ---
 
-## ✅ Demo locale (3 commandes)
+## ✅ Local demo (3 commands)
 
-Reproductible depuis une clone fraîche — prouve install + record/inject + version cohérente :
+Reproducible from a fresh clone — proves install + record/inject + consistent version:
 
 ```bash
 pip install -e .
@@ -106,29 +141,7 @@ acb init --dir /tmp/acb-demo && acb record --dir /tmp/acb-demo --agent hermes-de
 acb --version
 ```
 
-Attendu : `agent-bridge 0.2.0` (identique à `pyproject.toml`, `__init__.__version__` et au tag `v0.2.0` — le workflow `release.yml` refuse la publication si tag ≠ version).
-
----
-
-## 🪝 Hooks natifs (1 commande chacun)
-
-### Claude Code — SessionStart
-
-```bash
-acb hooks claude --print     # affiche le snippet .claude/settings.json
-acb hooks claude --install   # écrit/fusionne <workspace>/.claude/settings.json (idempotent)
-echo '{}' | acb hooks run --target claude   # teste le hook : exit 0 + contexte sur stdout
-```
-
-Le hook enregistré est `acb inject --target claude` : Claude Code l'exécute à chaque
-SessionStart (payload JSON sur stdin, ignoré) et le stdout est injecté en contexte de session.
-
-### Hermes Agent — inject
-
-```bash
-acb hooks hermes --print     # snippet de câblage (préambule de session)
-acb inject --target hermes   # inject 1-commande, prêt pour le system context
-```
+Expected: `agent-bridge 0.3.0` (matches `pyproject.toml`, `__init__.__version__`, and tag `v0.3.0` — `release.yml` refuses publish on mismatch).
 
 ---
 
@@ -148,6 +161,7 @@ acb inject --target hermes   # inject 1-commande, prêt pour le system context
      │  Hermes   │         │Claude Code│         │ OpenCode  │
      │  Adapter  │         │  Adapter  │         │  Adapter  │
      └───────────┘         └───────────┘         └───────────┘
+              Claude Desktop/Code ◄── acb-mcp (stdio, readonly)
 ```
 
 ---
@@ -155,12 +169,12 @@ acb inject --target hermes   # inject 1-commande, prêt pour le system context
 ## 🧪 Running Tests
 
 ```bash
-pytest -v
+pytest -v   # 73/73 green on v0.3.0
 ```
 
 ---
 
 ## 📄 License
 
-This project is open-source under the [MIT License](LICENSE).  
+Open-source under the [MIT License](LICENSE).
 Authored by **shenn667** ([lehdev@yandex.com](mailto:lehdev@yandex.com)).
