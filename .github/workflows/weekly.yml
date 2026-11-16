@@ -1,0 +1,47 @@
+name: Weekly Maintenance
+
+on:
+  schedule:
+    - cron: '0 9 * * 1'
+  workflow_dispatch:
+
+jobs:
+  weekly:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ['3.10', '3.11', '3.12']
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install .[dev]
+
+      - name: Run test suite
+        run: pytest -v
+
+      - name: Clean venv install (no deps)
+        run: |
+          python -m venv /tmp/smokevenv
+          /tmp/smokevenv/bin/pip install --upgrade pip
+          /tmp/smokevenv/bin/pip install . --no-deps
+          /tmp/smokevenv/bin/acb --version
+          rm -rf /tmp/smokevenv
+
+      - name: Smoke test acb init/record/search/status/audit
+        run: |
+          mkdir -p /tmp/acb-smoke && cd /tmp/acb-smoke
+          acb init
+          acb record --agent smoke --topic weekly --summary "weekly smoke test"
+          acb search weekly
+          acb status
+          acb audit
