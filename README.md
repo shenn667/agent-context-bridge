@@ -40,7 +40,7 @@ Prefer hooks? One command each — `acb hooks claude --install` writes `.claude/
 
 ---
 
-## ✨ What's new in v0.3.0
+## ✨ What's new in v0.3.1
 
 | Command | What it does |
 |---|---|
@@ -141,7 +141,7 @@ acb init --dir /tmp/acb-demo && acb record --dir /tmp/acb-demo --agent hermes-de
 acb --version
 ```
 
-Expected: `agent-bridge 0.3.0` (matches `pyproject.toml`, `__init__.__version__`, and tag `v0.3.0` — `release.yml` refuses publish on mismatch).
+Expected: `agent-bridge 0.3.1` (matches `pyproject.toml`, `__init__.__version__`, and tag `v0.3.1` — `release.yml` refuses publish on mismatch).
 
 ---
 
@@ -169,7 +169,7 @@ Expected: `agent-bridge 0.3.0` (matches `pyproject.toml`, `__init__.__version__`
 ## 🧪 Running Tests
 
 ```bash
-pytest -v   # 73/73 green on v0.3.0
+pytest -v   # 73/73 green on v0.3.1
 ```
 
 ---

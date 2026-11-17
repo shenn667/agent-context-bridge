@@ -5,6 +5,12 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-11-17
+### Fixed
+- Patch release: version alignment 0.3.1 across `pyproject.toml`,
+  `__init__.__version__`, `server.json`, and registry metadata
+  (`README.md` mcp-name marker verified, `server.json` present).
+
 ## [0.3.0] - 2026-11-16
 ### Added
 - `acb search <query> [-n/--limit 1..100] [--tag]... [--agent] [--json] [--dir]`
