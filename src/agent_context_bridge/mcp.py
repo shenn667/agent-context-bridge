@@ -33,31 +33,97 @@ SERVER_NAME = "acb-mcp"
 
 TOOL_NAMES = ("acb_search", "acb_status")
 
+SERVER_INSTRUCTIONS = (
+    "Agent Context Bridge: shared offline memory across coding agents "
+    "(Hermes, Claude Code, OpenCode, Codex). "
+    "2 strictly read-only tools. Call acb_status first to verify the "
+    "workspace store is initialized and non-empty; then call acb_search to "
+    "recall past decisions, constraints, and task notes before acting. "
+    "Recording, pruning, and auditing are CLI-only (acb record/prune/audit) "
+    "and intentionally unavailable here, so this server can never modify state."
+)
+
+# MCP annotation hints (captured by Glama introspection): both tools are
+# side-effect free, non-destructive, idempotent, and offline-only.
+_READONLY_ANNOTATIONS = {
+    "readOnlyHint": True,
+    "destructiveHint": False,
+    "idempotentHint": True,
+    "openWorldHint": False,
+}
+
 
 def _tool_defs() -> List[Dict[str, Any]]:
     return [
         {
             "name": "acb_search",
-            "description": "Full-text search over shared agent context (read-only).",
+            "annotations": dict(_READONLY_ANNOTATIONS),
+            "description": (
+                "Read-only full-text search over the shared agent context store "
+                "(.agent_bridge/records.jsonl). OR-combined case-insensitive match "
+                "on topic/summary/details/tags, newest-first. Never writes or prunes; "
+                "use to find prior decisions before acting. "
+                "Returns {version, command, query, count, results[], skipped}."
+            ),
             "inputSchema": {
                 "type": "object",
                 "properties": {
-                    "query": {"type": "string", "description": "1+ words, OR-combined"},
-                    "limit": {"type": "integer", "minimum": 1, "maximum": 100, "default": 10},
-                    "tag": {"type": "array", "items": {"type": "string"}},
-                    "agent": {"type": "string"},
-                    "dir": {"type": "string", "description": "Workspace path (default: server cwd)"},
+                    "query": {
+                        "type": "string",
+                        "description": (
+                            "1+ words, OR-combined, case-insensitive; "
+                            "e.g. 'auth decision'. Required, non-empty."
+                        ),
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 100,
+                        "default": 10,
+                        "description": "Max hits 1..100, default 10, newest-first.",
+                    },
+                    "tag": {
+                        "type": "array",
+                        "items": {"type": "string"},
+                        "description": "Optional tag filter list, e.g. ['db']; ANDed with query.",
+                    },
+                    "agent": {
+                        "type": "string",
+                        "description": (
+                            "Optional agent-name filter, exact case-insensitive match, "
+                            "e.g. 'hermes-dev'."
+                        ),
+                    },
+                    "dir": {
+                        "type": "string",
+                        "description": (
+                            "Optional workspace path confined under the server --dir root; "
+                            "outside root rejected (-32602). Default: server cwd."
+                        ),
+                    },
                 },
                 "required": ["query"],
             },
         },
         {
             "name": "acb_status",
-            "description": "Read-only workspace diagnostic (records, size, health).",
+            "annotations": dict(_READONLY_ANNOTATIONS),
+            "description": (
+                "Read-only workspace diagnostic for the shared context store. "
+                "Returns {initialized, records, store_bytes, last_updated, targets, version}. "
+                "Never creates the store; uninitialized workspace returns initialized:false. "
+                "Use to verify ACB wiring/health before search/inject."
+            ),
             "inputSchema": {
                 "type": "object",
                 "properties": {
-                    "dir": {"type": "string", "description": "Workspace path (default: server cwd)"},
+                    "dir": {
+                        "type": "string",
+                        "description": (
+                            "Optional workspace path confined under the server --dir root; "
+                            "outside root rejected (-32602). Default: server cwd."
+                        ),
+                    },
                 },
             },
         },
@@ -176,12 +242,18 @@ def handle_message(msg: Any, default_dir: Optional[Path] = None) -> Optional[Dic
                 "protocolVersion": PROTOCOL_VERSION,
                 "capabilities": {"tools": {}},
                 "serverInfo": {"name": SERVER_NAME, "version": get_version()},
+                "instructions": SERVER_INSTRUCTIONS,
             },
         }
     if method == "ping":
         return {"jsonrpc": "2.0", "id": req_id, "result": {}}
     if method == "tools/list":
         return {"jsonrpc": "2.0", "id": req_id, "result": {"tools": _tool_defs()}}
+    if method in ("resources/list", "prompts/list"):
+        # This server exposes no resources or prompts; answer with an empty
+        # list (instead of -32601) so naive introspectors succeed.
+        key = "resources" if method == "resources/list" else "prompts"
+        return {"jsonrpc": "2.0", "id": req_id, "result": {key: []}}
     if method == "tools/call":
         if not isinstance(params, dict):
             return _err(req_id, -32602, "Invalid params: params must be an object.")
