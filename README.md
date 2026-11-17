@@ -4,6 +4,7 @@
 [![PyPI version](https://img.shields.io/pypi/v/agent-context-bridge.svg)](https://pypi.org/project/agent-context-bridge/)
 [![Python: 3.10+](https://img.shields.io/badge/python-3.10%2B-brightgreen.svg)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![agent-context-bridge MCP server – quality and maintenance score on Glama](https://glama.ai/mcp/servers/shenn667/agent-context-bridge/badges/score.svg)](https://glama.ai/mcp/servers/shenn667/agent-context-bridge)
 
 > **Universal, zero-dependency context & memory bridge for autonomous coding agents.**
 > Share project decisions, architectural constraints, and task progress between **Hermes Agent**, **Claude Code**, **OpenCode**, and **Codex**.
