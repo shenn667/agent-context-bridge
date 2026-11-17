@@ -1,0 +1,17 @@
+# Smithery configuration file: https://smithery.ai/docs/build/project-config
+# Deploys acb-mcp (zero-dependency Python stdio MCP server) as a Smithery container.
+# Zero-config server: no API keys, no env vars. Workspace defaults to server cwd.
+
+runtime: "container"
+
+build:
+  dockerfile: "Dockerfile"
+  dockerBuildPath: "."
+
+startCommand:
+  type: stdio
+  configSchema:
+    type: object
+    properties: {}
+  commandFunction: |-
+    (config) => ({ command: 'acb-mcp', args: [] })

@@ -18,7 +18,7 @@
 
 ## 🔌 Claude-native: MCP server `acb-mcp` (readonly)
 
-Claude Code / Claude Desktop can query shared context directly via stdio MCP — no hook needed. The server exposes 3 strictly **readonly** tools: `acb_search`, `acb_status`, `acb_prune` (dry-run by default, never mutates unless asked).
+Claude Code / Claude Desktop can query shared context directly via stdio MCP — no hook needed. The server exposes 2 strictly **readonly** tools: `acb_search` and `acb_status`. (`prune` stays CLI-only and never runs inside MCP.)
 
 Copy-paste into `claude.json` (Claude Code) or Claude Desktop MCP config:
 
@@ -178,3 +178,5 @@ pytest -v   # 73/73 green on v0.3.0
 
 Open-source under the [MIT License](LICENSE).
 Authored by **shenn667** ([lehdev@yandex.com](mailto:lehdev@yandex.com)).
+
+<!-- mcp-name: io.github.shenn667/agent-context-bridge -->

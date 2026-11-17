@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "acb": {
+      "command": "uvx",
+      "args": ["--from", "agent-context-bridge", "acb-mcp"],
+      "transport": "stdio"
+    }
+  }
+}

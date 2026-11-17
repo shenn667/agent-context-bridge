@@ -1,0 +1,21 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.shenn667/agent-context-bridge",
+  "title": "Agent Context Bridge",
+  "description": "Zero-dependency shared context bridge for coding agents (read-only search + status).",
+  "repository": {
+    "url": "https://github.com/shenn667/agent-context-bridge",
+    "source": "github"
+  },
+  "version": "0.3.0",
+  "packages": [
+    {
+      "registryType": "pypi",
+      "identifier": "agent-context-bridge",
+      "version": "0.3.0",
+      "transport": {
+        "type": "stdio"
+      }
+    }
+  ]
+}
