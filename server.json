@@ -2,17 +2,17 @@
   "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
   "name": "io.github.shenn667/agent-context-bridge",
   "title": "Agent Context Bridge",
-  "description": "Zero-dependency shared context bridge for coding agents (read-only search + status).",
+  "description": "Zero-dependency offline shared context & memory bridge for coding agents (Hermes, Claude Code, OpenCode, Codex). MCP server exposes 2 strictly read-only tools: acb_search (full-text search over past decisions, constraints, task notes) and acb_status (store health: records, size, agent coverage). Recording, pruning, and auditing stay CLI-only, so the server can never modify state.",
   "repository": {
     "url": "https://github.com/shenn667/agent-context-bridge",
     "source": "github"
   },
-  "version": "0.3.1",
+  "version": "0.3.2",
   "packages": [
     {
       "registryType": "pypi",
       "identifier": "agent-context-bridge",
-      "version": "0.3.1",
+      "version": "0.3.2",
       "transport": {
         "type": "stdio"
       }

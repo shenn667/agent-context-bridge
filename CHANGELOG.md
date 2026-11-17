@@ -5,6 +5,25 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [0.3.2] - 2026-11-17
+### Improved
+- Glama TDQS: richer `acb-mcp` tool definitions — `acb_search` now states
+  read-only full-text OR-combined newest-first + `required: [query]` +
+  `limit` 1..100 bounds + tag/agent/dir semantics + `-32602` confinement;
+  `acb_status` now states payload keys
+  (`initialized/records/store_bytes/last_updated/targets/version`) + never-creates.
+  Strictly readonly preserved (`prune` stays CLI-only, unknown tools → `-32601`).
+- README: Glama Gateway usage section (local stdio smoke test + Gateway
+  `mcp-remote` config + Try in Browser), 2-tool clarification.
+- MCP introspection robustness: `initialize` now publishes `instructions`
+  (fills Glama Schema "Instructions"); both tools carry MCP annotation hints
+  (`readOnlyHint`/`idempotentHint: true`, `destructiveHint`/`openWorldHint: false`);
+  `resources/list` + `prompts/list` answer `[]` instead of `-32601`.
+- Tests: 92 green (`test_mcp_tool_defs_quality_descriptions` locks TDQS keywords,
+  plus `test_mcp_tool_annotations_readonly`,
+  `test_mcp_initialize_publishes_instructions`,
+  `test_mcp_empty_resources_prompts_lists`).
+
 ## [0.3.1] - 2026-11-17
 ### Fixed
 - Patch release: version alignment 0.3.1 across `pyproject.toml`,

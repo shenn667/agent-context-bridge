@@ -38,9 +38,47 @@ Then ask Claude: *"search ACB for the auth decision"* → `acb_search` returns t
 
 Prefer hooks? One command each — `acb hooks claude --install` writes `.claude/settings.json` (SessionStart → `acb inject --target claude`), `--print` previews it.
 
+### 🌐 Glama Gateway: seed usage in 2 minutes
+
+Glama counts `No recent usage` when no tool call is observed in 30 days. Two copy-paste ways to generate usage (local counts for dev, Gateway counts for Discovery):
+
+```bash
+# A. Local stdio smoke test (no network, proves 2 readonly tools)
+acb init --dir /tmp/acb-demo
+acb record --dir /tmp/acb-demo --agent hermes-dev --topic "Gateway" --summary "Smoke OK"
+printf '%s\n' \
+  '{"jsonrpc":"2.0","id":1,"method":"tools/list","params":{}}' \
+  '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"acb_search","arguments":{"query":"smoke"}}}' \
+  '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"acb_status","arguments":{}}}' \
+| acb-mcp --dir /tmp/acb-demo
+# expect: tools=[acb_search, acb_status], search count>=1, status initialized:true
+```
+
+```json
+// B. Via Glama Gateway (once a Glama release is published)
+// 1. Glama page → Deploy on Glama → healthy → copy endpoint:
+//    https://glama.ai/endpoints/<your-connection-profile>/mcp
+// 2. Paste into any MCP client:
+{
+  "mcpServers": {
+    "acb-gateway": {
+      "command": "npx",
+      "args": [
+        "mcp-remote",
+        "https://glama.ai/endpoints/<your-connection-profile>/mcp"
+      ]
+    }
+  }
+}
+// 3. Or click "Try in Browser" on the Glama server page → call acb_status.
+// Every call through the Gateway URL is logged + counted as usage.
+```
+
+> Note: only 2 MCP tools exist by design (`acb_search`, `acb_status`, both readonly). `prune`/`audit` stay CLI-only. If a checklist mentions a 3rd MCP tool, it is obsolete.
+
 ---
 
-## ✨ What's new in v0.3.1
+## ✨ What's new in v0.3.2
 
 | Command | What it does |
 |---|---|
@@ -141,7 +179,7 @@ acb init --dir /tmp/acb-demo && acb record --dir /tmp/acb-demo --agent hermes-de
 acb --version
 ```
 
-Expected: `agent-bridge 0.3.1` (matches `pyproject.toml`, `__init__.__version__`, and tag `v0.3.1` — `release.yml` refuses publish on mismatch).
+Expected: `agent-bridge 0.3.2` (matches `pyproject.toml`, `__init__.__version__`, and tag `v0.3.2` — `release.yml` refuses publish on mismatch).
 
 ---
 
@@ -169,7 +207,7 @@ Expected: `agent-bridge 0.3.1` (matches `pyproject.toml`, `__init__.__version__`
 ## 🧪 Running Tests
 
 ```bash
-pytest -v   # 73/73 green on v0.3.1
+pytest -v   # 92/92 green on v0.3.2
 ```
 
 ---

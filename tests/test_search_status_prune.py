@@ -1,4 +1,4 @@
-"""Tests for v0.3.1 commands: search / status / prune (§6 + §8)."""
+"""Tests for v0.3.2 commands: search / status / prune (§6 + §8)."""
 
 import json
 import subprocess
@@ -140,7 +140,7 @@ def test_search_json_structure(tmp_path: Path):
     assert res.returncode == 0, res.stderr
     assert res.stdout.endswith("\n") and res.stdout.count("\n") == 1
     payload = json.loads(res.stdout)
-    assert payload["version"] == get_version() == "0.3.1"
+    assert payload["version"] == get_version() == "0.3.2"
     assert payload["command"] == "search"
     assert payload["query"] == "wal"
     assert payload["count"] == 1
@@ -416,7 +416,7 @@ def test_prune_json_roundtrip_coherence(tmp_path: Path):
     assert r["dry_run"] is False
     assert (r["pruned"], r["kept"]) == (d["pruned"], d["kept"])
     assert set(r) == {"version", "command", "pruned", "kept", "dry_run", "ids"}
-    assert r["command"] == "prune" and r["version"] == "0.3.1"
+    assert r["command"] == "prune" and r["version"] == "0.3.2"
 
 
 def test_prune_not_initialized_and_dir_missing(tmp_path: Path):

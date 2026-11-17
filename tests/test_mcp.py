@@ -167,3 +167,73 @@ def test_mcp_dir_inside_server_root_allowed(tmp_path: Path):
     assert "result" in out[0]
     payload = json.loads(out[0]["result"]["content"][0]["text"])
     assert payload["initialized"] is True
+
+
+def test_mcp_tool_defs_quality_descriptions(tmp_path: Path):
+    """Glama TDQS: tool descriptions must state readonly, OR/newest-first,
+    required query, limit bounds, confinement, and status payload keys."""
+    _seed(tmp_path)
+    out = _mcp_call([
+        {"jsonrpc": "2.0", "id": 1, "method": "tools/list", "params": {}},
+    ], tmp_path)
+    by_id = {m["id"]: m for m in out if "id" in m}
+    tools = {t["name"]: t for t in by_id[1]["result"]["tools"]}
+    assert set(tools) == {"acb_search", "acb_status"}
+
+    search = tools["acb_search"]
+    desc = search["description"].lower()
+    for keyword in ("read-only", "or-combined", "newest-first", "never writes"):
+        assert keyword in desc, keyword
+    props = search["inputSchema"]["properties"]
+    assert search["inputSchema"]["required"] == ["query"]
+    assert "non-empty" in props["query"]["description"].lower()
+    assert props["limit"]["minimum"] == 1 and props["limit"]["maximum"] == 100
+    assert "newest-first" in props["limit"]["description"].lower()
+    assert "anded" in props["tag"]["description"].lower()
+    assert "-32602" in props["dir"]["description"]
+
+    status = tools["acb_status"]
+    sdesc = status["description"].lower()
+    for keyword in ("read-only", "initialized", "records", "store_bytes", "never creates"):
+        assert keyword in sdesc, keyword
+    assert "-32602" in status["inputSchema"]["properties"]["dir"]["description"]
+
+
+def test_mcp_tool_annotations_readonly(tmp_path: Path):
+    """Glama TDQS Behavioral Transparency: both tools carry readOnly annotations."""
+    _seed(tmp_path)
+    out = _mcp_call([
+        {"jsonrpc": "2.0", "id": 1, "method": "tools/list", "params": {}},
+    ], tmp_path)
+    by_id = {m["id"]: m for m in out if "id" in m}
+    for tool in by_id[1]["result"]["tools"]:
+        ann = tool.get("annotations", {})
+        assert ann.get("readOnlyHint") is True, tool["name"]
+        assert ann.get("destructiveHint") is False, tool["name"]
+        assert ann.get("idempotentHint") is True, tool["name"]
+
+
+def test_mcp_initialize_publishes_instructions(tmp_path: Path):
+    """Glama Schema 'Instructions' section: initialize must publish guidance."""
+    _seed(tmp_path)
+    out = _mcp_call([
+        {"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {}},
+    ], tmp_path)
+    by_id = {m["id"]: m for m in out if "id" in m}
+    result = by_id[1]["result"]
+    assert "instructions" in result and isinstance(result["instructions"], str)
+    low = result["instructions"].lower()
+    for keyword in ("acb_status", "acb_search", "read-only"):
+        assert keyword in low, keyword
+
+
+def test_mcp_empty_resources_prompts_lists(tmp_path: Path):
+    """Introspectors calling resources/list + prompts/list get [] (not -32601)."""
+    _seed(tmp_path)
+    out = _mcp_call([
+        {"jsonrpc": "2.0", "id": 1, "method": "resources/list", "params": {}},
+        {"jsonrpc": "2.0", "id": 2, "method": "prompts/list", "params": {}},
+    ], tmp_path)
+    by_id = {m["id"]: m for m in out if "id" in m}
+    assert by_id[1]["result"] == {"resources": []}
+    assert by_id[2]["result"] == {"prompts": []}
